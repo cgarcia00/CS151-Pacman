@@ -1,0 +1,1104 @@
+<html>
+  <!-- Names: Cristobal Garcia, Ashish Thakur, Cat Fergesen
+  Date: 6/3/2023
+
+  This our final project for CS151. It is a version of the famous arcade game Pacman.
+  The grid is layed out in HTML and CSS and the logic of Pacman, The enemies, and most 
+  of the websites behavior is handled using Epilog. Javascript code from Pelican Hunters
+  was modified used to override the default tick behavior in 
+  "http://worksheets.stanford.edu/javascript/worksheets.js" to better suit this projects
+  needs. Javascriptis also used to send click actions to Epilog for the arrow keys to 
+  move pacman. The images folder contains all the image files.
+  All other implementation details are explained in the Epilog portion of 
+  this file. -->
+
+  <head>
+    <title>Pacman, Stanford-Style</title>
+    <script
+      type="text/javascript"
+      src="http://worksheets.stanford.edu/epilog/javascript/epilog.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="http://worksheets.stanford.edu/javascript/worksheets.js"
+    ></script>
+    <script>
+      /* function detects key
+         presses and if the arrow keys are pressed then
+         the corresponding operation in Epilog runs. 
+         i.e. if the right arrow key is pressed then
+         click(right) is triggered.
+
+         This function also handles pausing/running the game
+         if the p key is pressed.
+      */
+      document.onkeydown = function(event) {
+         switch (event.keyCode) {
+            case 37:
+              let left = document.createElement('button')
+              left.id = "left"
+              left.type = "submit"
+              handle(left)
+            break;
+            case 38:
+              let up = document.createElement('button')
+              up.id = "up"
+              up.type = "submit"
+              handle(up)
+            break;
+            case 39:
+              let right = document.createElement('button')
+              right.id = "right"
+              right.type = "submit"
+              handle(right)
+            break;
+            case 40:
+              let down = document.createElement('button')
+              down.id = "down"
+              down.type = "submit"
+              handle(down)
+            break;
+            case 80:
+              if (document.getElementById('play').disabled===true) {
+                dopause();
+              } else {
+                doplay();
+              }
+            break;
+         }
+      };
+      
+      /* These function are code that originate in the Epilog source
+         code but were modified for Pelican Hunters. They were modifed once
+         more for CS151 Pacman
+      */
+      function dostep ()
+      {return fullreact('tick')}
+
+      function doplay ()
+      {document.getElementById('step').disabled=true;
+        document.getElementById('play').disabled=true;
+        document.getElementById('pause').disabled=true;
+        document.getElementById('reset').disabled=true;
+        run();
+        document.getElementById('step').disabled=true;
+        document.getElementById('play').disabled=true;
+        document.getElementById('pause').disabled=false;
+        document.getElementById('reset').disabled=true;
+        return true}
+
+      function dopause ()
+      {document.getElementById('step').disabled=true;
+        document.getElementById('play').disabled=true;
+        document.getElementById('pause').disabled=true;
+        document.getElementById('reset').disabled=true;
+        document.getElementById('step').disabled=false;
+        document.getElementById('play').disabled=false;
+        document.getElementById('pause').disabled=true;
+        document.getElementById('reset').disabled=false;
+        if (ticker) {clearTimeout(ticker); ticker = false};
+        return true}
+
+      function doreset ()
+      {definefacts(lambda,readdata(document.getElementById('lambda').textContent));
+        populatesheet();
+        dostep();
+        let reset = document.createElement('button')
+        reset.id = "reset"
+        reset.type = "submit"
+        handle(reset)
+        if (ticker) {clearTimeout(ticker); ticker = false};
+        document.getElementById('step').disabled=false;
+        document.getElementById('play').disabled=false;
+        document.getElementById('pause').disabled=true;
+        document.getElementById('reset').disabled=false;
+        return true}
+
+      function run () {
+        fullreact('tick');
+        var tickinterval = compfindx("X",seq("tickinterval","X"),lambda,library);
+        var interval = parseFloat(tickinterval || 100);
+        ticker = setTimeout(run,interval);
+        return true
+      }
+   </script>
+  </head>
+  <link rel="stylesheet" href="index.css">
+  <body onload="initialize()" class="body-style" >
+    <!-- Where the Score is displayed  -->
+    <p id="score" style="color:white"></p>
+    <!-- Where the Help Menu is displayed -->
+    <div id="help" class="help" style="display: none;">
+      <h1>Welcome to Pacman, Stanford-Style!</h1>
+      <p>This game is just like pacman except instead of ghosts we have 4 new threats.</p>
+      <h3>Instructions</h3>
+      <p>1. Press the play button or p key to begin the game. Press p again to pause.</p>
+      <p>2. Use the arrow keys to move pacman.</p>
+      <p>3. Eat the pac-dots to get points.</p>
+      <p>4. Avoid the Shiba Inu, The Cal Bear, and Professor Genesereth. Crashing into them will end the game!</p>
+      <p>5. The Stanford Tree will give 10 bonus points if collected. Continue collecting Trees if you are out of pac-dots. Go Cardinals!</p>
+      <h3>Tips!</h3>
+      <p><img src="images/shiba.png"> The Shiba Inu will travel to the left corner of the map before falling down all columns that are clear of blue blocks.</p>  
+      <p><img src="images/bear.png"> The Cal Bear will run around the center of the map. She is not the brightest bear but she is ferocious!</p>
+      <p><img src="images/tree.png"> The Stanford Tree is your friend. Collecting it will grant you 10 bonus points.</p>
+      <p><img src="images/michael.jpeg"> Professor Genesereth is the biggest threat! His agility lets him get over the blue blocks and his use of logic allows him to pursue pacman more effectivly. However, he comes out much later.</p>
+    </div>
+    <!-- Where the big question mark button is displayed  -->
+    <button id="helpButton" class="helpButton" onclick="handle(this)">?</button>
+    <!-- Where the play/pause buttons are displayed. Other buttons are displayed and
+         are only for testing. The game over message is also centered here.
+    -->
+    <center>
+      <div id="gameover" class="gameover" style="display: none;">
+        <p id="gameOverMessage"></p>
+        <p id="score"></p>
+        <button onclick="doreset()">Play Again?</button>
+      </div>
+      <br/>
+      <input id='step' type='button' value='Step' onclick='dostep()' style="display: none;"/>
+      <input id='play' type='button' value='Play' onclick='doplay()'/>
+      <input id='pause' type='button' value='Pause' onclick='dopause()' disabled='true'/>
+      <input id='reset' type='button' value='Reset' onclick='doreset()' style="display: none"/>
+      <br/>
+      <br/>
+    </center>
+    <!-- The grid is 9x18 and there is a box div for each one
+         They all have a div with a id of box(row(R),col(C)) and within that
+         div there is a img tag where the image is stored that has another id of 
+         boxImg(row(R),col(C)).  
+    -->
+    <div class="grid">
+        <div class="row-container">
+            <div id="box(row(0),col(0))" class="box"><img id="boxImg(row(0),col(0))" height="40"><img id="01" height="40"></div>
+            <div id="box(row(0),col(1))" class="box"><img id="boxImg(row(0),col(1))" height="40"><img id="01" height="40"></div>
+            <div id="box(row(0),col(2))" class="box"><img id="boxImg(row(0),col(2))" height="40"></div>
+            <div id="box(row(0),col(3))" class="box"><img id="boxImg(row(0),col(3))" height="40"></div>
+            <div id="box(row(0),col(4))" class="box"></div>
+            <div id="box(row(0),col(5))" class="box"><img id="boxImg(row(0),col(5))" height="40"></div>
+            <div id="box(row(0),col(6))" class="box"><img id="boxImg(row(0),col(6))" height="40"></div>
+            <div id="box(row(0),col(7))" class="box"><img id="boxImg(row(0),col(7))" height="40"></div>
+            <div id="box(row(0),col(8))" class="box"><img id="boxImg(row(0),col(8))" height="40"></div>
+            <div id="box(row(0),col(9))" class="box"><img id="boxImg(row(0),col(9))" height="40"></div>
+            <div id="box(row(0),col(10))" class="box"><img id="boxImg(row(0),col(10))" height="40"></div>
+            <div id="box(row(0),col(11))" class="box"><img id="boxImg(row(0),col(11))" height="40"></div>
+            <div id="box(row(0),col(12))" class="box"><img id="boxImg(row(0),col(12))" height="40"></div>
+            <div id="box(row(0),col(13))" class="box"></div>
+            <div id="box(row(0),col(14))" class="box"><img id="boxImg(row(0),col(14))" height="40"></div>
+            <div id="box(row(0),col(15))" class="box"><img id="boxImg(row(0),col(15))" height="40"></div>
+            <div id="box(row(0),col(16))" class="box"><img id="boxImg(row(0),col(16))" height="40"></div>
+            <div id="box(row(0),col(17))" class="box"><img id="boxImg(row(0),col(17))" height="40"></div>
+        </div>
+        <div class="row-container">
+            <div id="box(row(1),col(0))" class="box"><img id="boxImg(row(1),col(0))" height="40"></div>
+            <div id="box(row(1),col(1))" class="box"></div>
+            <div id="box(row(1),col(2))" class="box"></div>
+            <div id="box(row(1),col(3))" class="box"><img id="boxImg(row(1),col(3))" height="40"></div>
+            <div id="box(row(1),col(4))" class="box"></div>
+            <div id="box(row(1),col(5))" class="box"><img id="boxImg(row(1),col(5))" height="40"></div>
+            <div id="box(row(1),col(6))" class="box"></div>
+            <div id="box(row(1),col(7))" class="box"></div>
+            <div id="box(row(1),col(8))" class="box"></div>
+            <div id="box(row(1),col(9))" class="box"></div>
+            <div id="box(row(1),col(10))" class="box"></div>
+            <div id="box(row(1),col(11))" class="box"></div>
+            <div id="box(row(1),col(12))" class="box"><img id="boxImg(row(1),col(12))" height="40"></div>
+            <div id="box(row(1),col(13))" class="box"></div>
+            <div id="box(row(1),col(14))" class="box"><img id="boxImg(row(1),col(14))" height="40"></div>
+            <div id="box(row(1),col(15))" class="box"></div>
+            <div id="box(row(1),col(16))" class="box"></div>
+            <div id="box(row(1),col(17))" class="box"><img id="boxImg(row(1),col(17))" height="40"></div>
+        </div>
+        <div class="row-container">
+            <div id="box(row(2),col(0))" class="box  "><img id="boxImg(row(2),col(0))" height="40"></div>
+            <div id="box(row(2),col(1))" class="box "></div>
+            <div id="box(row(2),col(2))" class="box  "><img id="boxImg(row(2),col(2))" height="40"></div>
+            <div id="box(row(2),col(3))" class="box   "><img id="boxImg(row(2),col(3))" height="40"></div>
+            <div id="box(row(2),col(4))" class="box  "><img id="boxImg(row(2),col(4))" height="40"></div>
+            <div id="box(row(2),col(5))" class="box    "><img id="boxImg(row(2),col(5))" height="40"></div>
+            <div id="box(row(2),col(6))" class="box  "><img id="boxImg(row(2),col(6))" height="40"></div>
+            <div id="box(row(2),col(7))" class="box  "><img id="boxImg(row(2),col(7))" height="40"></div>
+            <div id="box(row(2),col(8))" class="box   "><img id="boxImg(row(2),col(8))" height="40"></div>
+            <div id="box(row(2),col(9))" class="box    "><img id="boxImg(row(2),col(9))" height="40"></div>
+            <div id="box(row(2),col(10))" class="box  "><img id="boxImg(row(2),col(10))" height="40"></div>
+            <div id="box(row(2),col(11))" class="box  "><img id="boxImg(row(2),col(11))" height="40"></div>
+            <div id="box(row(2),col(12))" class="box    "><img id="boxImg(row(2),col(12))" height="40"></div>
+            <div id="box(row(2),col(13))" class="box  "><img id="boxImg(row(2),col(13))" height="40"></div>
+            <div id="box(row(2),col(14))" class="box   "><img id="boxImg(row(2),col(14))" height="40"></div>
+            <div id="box(row(2),col(15))" class="box  "><img id="boxImg(row(2),col(15))" height="40"></div>
+            <div id="box(row(2),col(16))" class="box "></div>
+            <div id="box(row(2),col(17))" class="box  "><img id="boxImg(row(2),col(17))" height="40"></div>
+        </div>
+        <div class="row-container">
+            <div id="box(row(3),col(0))" class="box  "><img id="boxImg(row(3),col(0))" height="40"></div>
+            <div id="box(row(3),col(1))" class="box "></div>
+            <div id="box(row(3),col(2))" class="box  "><img id="boxImg(row(3),col(2))" height="40"></div>
+            <div id="box(row(3),col(3))" class="box "></div>
+            <div id="box(row(3),col(4))" class="box "></div>
+            <div id="box(row(3),col(5))" class="box  "><img id="boxImg(row(3),col(5))" height="40"></div>
+            <div id="box(row(3),col(6))" class="box "></div>
+            <div id="box(row(3),col(7))" class="box "></span></div>
+            <div id="box(row(3),col(8))" class="box   "><img id="boxImg(row(3),col(8))" height="40"></div>
+            <div id="box(row(3),col(9))" class="box  "><img id="boxImg(row(3),col(9))" height="40"></div>
+            <div id="box(row(3),col(10))" class="box "></div>
+            <div id="box(row(3),col(11))" class="box "></div>
+            <div id="box(row(3),col(12))" class="box  "><img id="boxImg(row(3),col(12))" height="40"></div>
+            <div id="box(row(3),col(13))" class="box "></div>
+            <div id="box(row(3),col(14))" class="box "></div>
+            <div id="box(row(3),col(15))" class="box  "><img id="boxImg(row(3),col(15))" height="40"></div>
+            <div id="box(row(3),col(16))" class="box "></div>
+            <div id="box(row(3),col(17))" class="box  "><img id="boxImg(row(3),col(17))" height="40"></div>
+        </div>
+        <div class="row-container">
+            <div id="box(row(4),col(0))" class="box   "><img id="boxImg(row(4),col(0))" height="40"></div>
+            <div id="box(row(4),col(1))" class="box  "><img id="boxImg(row(4),col(1))" height="40"></div>
+            <div id="box(row(4),col(2))" class="box    "><img id="boxImg(row(4),col(2))" height="40"></div>
+            <div id="box(row(4),col(3))" class="box  "><img id="boxImg(row(4),col(3))" height="40"></div>
+            <div id="box(row(4),col(4))" class="box  "><img id="boxImg(row(4),col(4))" height="40"></div>
+            <div id="box(row(4),col(5))" class="box  "><img id="boxImg(row(4),col(5))" height="40"></div>
+            <div id="box(row(4),col(6))" class="box "></div>
+            <div id="box(row(4),col(7))" class="box "><img id="boxImg(row(4),col(7))" height="40"></div>
+            <div id="box(row(4),col(8))" class="box   "><img id="boxImg(row(4),col(8))" height="40"></div>
+            <div id="box(row(4),col(9))" class="box   "><img id="boxImg(row(4),col(9))" height="40"></div>
+            <div id="box(row(4),col(10))" class="box "><img id="boxImg(row(4),col(10))" height="40"></div>
+            <div id="box(row(4),col(11))" class="box "></div>
+            <div id="box(row(4),col(12))" class="box   "><img id="boxImg(row(4),col(12))" height="40"></div>
+            <div id="box(row(4),col(13))" class="box  "><img id="boxImg(row(4),col(13))" height="40"></div>
+            <div id="box(row(4),col(14))" class="box  "><img id="boxImg(row(4),col(14))" height="40"></div>
+            <div id="box(row(4),col(15))" class="box    "><img id="boxImg(row(4),col(15))" height="40"></div>
+            <div id="box(row(4),col(16))" class="box  "><img id="boxImg(row(4),col(16))" height="40"></div>
+            <div id="box(row(4),col(17))" class="box  "><img id="boxImg(row(4),col(17))" height="40"></div>
+        </div>
+        <div class="row-container">
+            <div id="box(row(5),col(0))" class="box  "><img id="boxImg(row(5),col(0))" height="40"></div>
+            <div id="box(row(5),col(1))" class="box "></div>
+            <div id="box(row(5),col(2))" class="box  "><img id="boxImg(row(5),col(2))" height="40"></div>
+            <div id="box(row(5),col(3))" class="box "></div>
+            <div id="box(row(5),col(4))" class="box "></div>
+            <div id="box(row(5),col(5))" class="box  "><img id="boxImg(row(5),col(5))" height="40"></div>
+            <div id="box(row(5),col(6))" class="box "></div>
+            <div id="box(row(5),col(7))" class="box "></span></div>
+            <div id="box(row(5),col(8))" class="box "></div>
+            <div id="box(row(5),col(9))" class="box "></div>
+            <div id="box(row(5),col(10))" class="box "></div>
+            <div id="box(row(5),col(11))" class="box "></div>
+            <div id="box(row(5),col(12))" class="box  "><img id="boxImg(row(5),col(12))" height="40"></div>
+            <div id="box(row(5),col(13))" class="box "></div>
+            <div id="box(row(5),col(14))" class="box "></div>
+            <div id="box(row(5),col(15))" class="box  "><img id="boxImg(row(5),col(15))" height="40"></div>
+            <div id="box(row(5),col(16))" class="box "></div>
+            <div id="box(row(5),col(17))" class="box  "><img id="boxImg(row(5),col(17))" height="40"></div>
+        </div>
+        <div class="row-container">
+            <div id="box(row(6),col(0))" class="box  "><img id="boxImg(row(6),col(0))" height="40"></div>
+            <div id="box(row(6),col(1))" class="box "></div>
+            <div id="box(row(6),col(2))" class="box  "><img id="boxImg(row(6),col(2))" height="40"></div>
+            <div id="box(row(6),col(3))" class="box   "><img id="boxImg(row(6),col(3))" height="40"></div>
+            <div id="box(row(6),col(4))" class="box  "><img id="boxImg(row(6),col(4))" height="40"></div>
+            <div id="box(row(6),col(5))" class="box    "><img id="boxImg(row(6),col(5))" height="40"></div>
+            <div id="box(row(6),col(6))" class="box  "><img id="boxImg(row(6),col(6))" height="40"></div>
+            <div id="box(row(6),col(7))" class="box  "><img id="boxImg(row(6),col(7))" height="40"></div>
+            <div id="box(row(6),col(8))" class="box   "><img id="boxImg(row(6),col(8))" height="40"></div>
+            <div id="box(row(6),col(9))" class="box    "><img id="boxImg(row(6),col(9))" height="40"></div>
+            <div id="box(row(6),col(10))" class="box  "><img id="boxImg(row(6),col(10))" height="40"></div>
+            <div id="box(row(6),col(11))" class="box  "><img id="boxImg(row(6),col(11))" height="40"></div>
+            <div id="box(row(6),col(12))" class="box    "><img id="boxImg(row(6),col(12))" height="40"></div>
+            <div id="box(row(6),col(13))" class="box  "><img id="boxImg(row(6),col(13))" height="40"></div>
+            <div id="box(row(6),col(14))" class="box  "><img id="boxImg(row(6),col(14))" height="40"></div>
+            <div id="box(row(6),col(15))" class="box  "><img id="boxImg(row(6),col(15))" height="40"></div>
+            <div id="box(row(6),col(16))" class="box "></div>
+            <div id="box(row(6),col(17))" class="box  "><img id="boxImg(row(6),col(17))" height="40"></div>
+        </div>
+        <div class="row-container">
+            <div id="box(row(7),col(0))" class="box  "><img id="boxImg(row(7),col(0))" height="40"></div>
+            <div id="box(row(7),col(1))" class="box "></div>
+            <div id="box(row(7),col(2))" class="box "></div>
+            <div id="box(row(7),col(3))" class="box  "><img id="boxImg(row(7),col(3))" height="40"></div>
+            <div id="box(row(7),col(4))" class="box "></div>
+            <div id="box(row(7),col(5))" class="box   "><img id="boxImg(row(7),col(5))" height="40"></div>
+            <div id="box(row(7),col(6))" class="box "></div>
+            <div id="box(row(7),col(7))" class="box "></div>
+            <div id="box(row(7),col(8))" class="box "></div>
+            <div id="box(row(7),col(9))" class="box "></div>
+            <div id="box(row(7),col(10))" class="box "></div>
+            <div id="box(row(7),col(11))" class="box "></div>
+            <div id="box(row(7),col(12))" class="box  "><img id="boxImg(row(7),col(12))" height="40"></div>
+            <div id="box(row(7),col(13))" class="box "></div>
+            <div id="box(row(7),col(14))" class="box  "><img id="boxImg(row(7),col(14))" height="40"></div>
+            <div id="box(row(7),col(15))" class="box "></div>
+            <div id="box(row(7),col(16))" class="box "></div>
+            <div id="box(row(7),col(17))" class="box  "><img id="boxImg(row(7),col(17))" height="40"></div>
+        </div>
+        <div class="row-container">
+            <div id="box(row(8),col(0))" class="box  "><img id="boxImg(row(8),col(0))" height="40"></div>
+            <div id="box(row(8),col(1))" class="box  "><img id="boxImg(row(8),col(1))" height="40"></div>
+            <div id="box(row(8),col(2))" class="box  "><img id="boxImg(row(8),col(2))" height="40"></div>
+            <div id="box(row(8),col(3))" class="box  "><img id="boxImg(row(8),col(3))" height="40"></div>
+            <div id="box(row(8),col(4))" class="box "></div>
+            <div id="box(row(8),col(5))" class="box  "><img id="boxImg(row(8),col(5))" height="40"></div>
+            <div id="box(row(8),col(6))" class="box  "><img id="boxImg(row(8),col(6))" height="40"></div>
+            <div id="box(row(8),col(7))" class="box  "><img id="boxImg(row(8),col(7))" height="40"></div>
+            <div id="box(row(8),col(8))" class="box  "><img id="boxImg(row(8),col(8))" height="40"></div>
+            <div id="box(row(8),col(9))" class="box  "><img id="boxImg(row(8),col(9))" height="40"></div>
+            <div id="box(row(8),col(10))" class="box  "><img id="boxImg(row(8),col(10))" height="40"></div>
+            <div id="box(row(8),col(11))" class="box  "><img id="boxImg(row(8),col(11))" height="40"></div>
+            <div id="box(row(8),col(12))" class="box  "><img id="boxImg(row(8),col(12))" height="40"></div>
+            <div id="box(row(8),col(13))" class="box "></div>
+            <div id="box(row(8),col(14))" class="box  "><img id="boxImg(row(8),col(14))" height="40"></div>
+            <div id="box(row(8),col(15))" class="box  "><img id="boxImg(row(8),col(15))" height="40"></div>
+            <div id="box(row(8),col(16))" class="box  "><img id="boxImg(row(8),col(16))" height="40"></div>
+            <div id="box(row(8),col(17))" class="box  "><img id="boxImg(row(8),col(17))" height="40"></div>
+        </div>
+    </div>
+
+  </body>
+  <dataset id="lambda" style="display: none;">
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%% There is 9 rows (0-8) and 18 columns (0,17)
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    isrow(0) isrow(1) isrow(2) isrow(3) isrow(4) isrow(5) isrow(6) isrow(7) isrow(8)
+    iscol(0) iscol(1) iscol(2) iscol(3) iscol(4) iscol(5) iscol(6) iscol(7) iscol(8)
+    iscol(9) iscol(10) iscol(11) iscol(12) iscol(13) iscol(14) iscol(15) iscol(16) iscol(17)
+
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%% All the style for the boxes is defined in Epilog. Its only functional
+    %%% purpose for being tracked in Epilog is so that the collision of Pacman and
+    %%% the blue walls can be tracked. i.e. if pacman is moving right and   
+    %%% style(box(row(R),col(plus(1,C))),  background-color, blue) is the dataset, then 
+    %%% Pacman will not move since that is the block to the right.
+    %%% None of the style for the block is ever edited.
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    %%%%%%%%%%%%%%%
+    % row 0 borders
+    %%%%%%%%%%%%%%%
+    style(box(row(0),col(0)), border-right-color, black) style(box(row(0),col(0)), border-bottom-color, black) 
+    style(box(row(0),col(1)), border-left-color, black) style(box(row(0),col(1)), border-right-color, black)
+    style(box(row(0),col(2)), border-left-color, black) style(box(row(0),col(2)), border-right-color, black)
+    style(box(row(0),col(3)), border-left-color, black) style(box(row(0),col(3)), border-bottom-color, black)
+    style(box(row(0),col(4)),  background-color, blue)
+    style(box(row(0),col(5)), border-right-color, black) style(box(row(0),col(5)), border-bottom-color, black)
+    style(box(row(0),col(6)), border-left-color, black) style(box(row(0),col(6)), border-right-color, black)
+    style(box(row(0),col(7)), border-left-color, black) style(box(row(0),col(7)), border-right-color, black)
+    style(box(row(0),col(8)), border-left-color, black) style(box(row(0),col(8)), border-right-color, black)
+    style(box(row(0),col(9)), border-left-color, black) style(box(row(0),col(9)), border-right-color, black)
+    style(box(row(0),col(10)), border-left-color, black) style(box(row(0),col(10)), border-right-color, black)
+    style(box(row(0),col(11)), border-left-color, black) style(box(row(0),col(11)), border-right-color, black)
+    style(box(row(0),col(12)), border-left-color, black) style(box(row(0),col(12)), border-bottom-color, black)
+    style(box(row(0),col(13)),  background-color, blue)
+    style(box(row(0),col(14)), border-right-color, black) style(box(row(0),col(14)), border-bottom-color, black)
+    style(box(row(0),col(15)), border-left-color, black) style(box(row(0),col(15)), border-right-color, black)
+    style(box(row(0),col(16)), border-left-color, black) style(box(row(0),col(16)), border-right-color, black)
+    style(box(row(0),col(17)), border-left-color, black) style(box(row(0),col(17)), border-bottom-color, black)
+
+    %%%%%%%%%%%%%%%
+    % row 1 borders
+    %%%%%%%%%%%%%%%
+    style(box(row(1),col(0)), border-top-color, black) style(box(row(1),col(0)), border-bottom-color, black) 
+    style(box(row(1),col(1)),  background-color, blue)
+    style(box(row(1),col(2)),  background-color, blue)
+    style(box(row(1),col(3)), border-top-color, black) style(box(row(1),col(3)), border-bottom-color, black) 
+    style(box(row(1),col(4)),  background-color, blue)
+    style(box(row(1),col(5)), border-top-color, black) style(box(row(1),col(5)), border-bottom-color, black) style(box(row(1),col(5)), border-right-color, black) 
+    style(box(row(1),col(6)),  background-color, blue)
+    style(box(row(1),col(7)),  background-color, blue)
+    style(box(row(1),col(8)),  background-color, blue)
+    style(box(row(1),col(9)),  background-color, blue)
+    style(box(row(1),col(10)),  background-color, blue)
+    style(box(row(1),col(11)),  background-color, blue)
+    style(box(row(1),col(12)), border-top-color, black) style(box(row(1),col(12)), border-bottom-color, black) 
+    style(box(row(1),col(13)),  background-color, blue)
+    style(box(row(1),col(14)), border-top-color, black) style(box(row(1),col(14)), border-bottom-color, black) 
+    style(box(row(1),col(15)),  background-color, blue)
+    style(box(row(1),col(16)),  background-color, blue)
+    style(box(row(1),col(17)), border-top-color, black) style(box(row(1),col(17)), border-bottom-color, black) 
+
+    %%%%%%%%%%%%%%%
+    % row 2 borders
+    %%%%%%%%%%%%%%%
+    style(box(row(2),col(0)), border-top-color, black) style(box(row(2),col(0)), border-bottom-color, black) 
+    style(box(row(2),col(1)),  background-color, blue)
+    style(box(row(2),col(2)), border-right-color, black) style(box(row(2),col(2)), border-bottom-color, black)
+    style(box(row(2),col(3)), border-left-color, black) style(box(row(2),col(3)), border-top-color, black) style(box(row(2),col(3)), border-right-color, black)
+    style(box(row(2),col(4)), border-left-color, black) style(box(row(2),col(4)), border-right-color, black)  
+    style(box(row(2),col(5)), border-left-color, black) style(box(row(2),col(5)), border-top-color, black) style(box(row(2),col(5)), border-right-color, black)   style(box(row(2),col(5)), border-bottom-color, black)
+    style(box(row(2),col(6)), border-right-color, black) style(box(row(2),col(6)), border-left-color, black)
+    style(box(row(2),col(7)), border-right-color, black) style(box(row(2),col(7)), border-left-color, black)
+    style(box(row(2),col(8)), border-right-color, black) style(box(row(2),col(8)), border-left-color, black) style(box(row(2),col(8)), border-bottom-color, black)
+    style(box(row(2),col(9)), border-right-color, black) style(box(row(2),col(9)), border-left-color, black) style(box(row(2),col(9)), border-bottom-color, black)
+    style(box(row(2),col(10)), border-right-color, black) style(box(row(2),col(10)), border-left-color, black)
+    style(box(row(2),col(11)), border-right-color, black) style(box(row(2),col(11)), border-left-color, black)
+    style(box(row(2),col(12)), border-left-color, black) style(box(row(2),col(12)), border-top-color, black) style(box(row(2),col(12)), border-right-color, black)   style(box(row(2),col(12)), border-bottom-color, black)
+    style(box(row(2),col(13)), border-right-color, black) style(box(row(2),col(13)), border-left-color, black)
+    style(box(row(2),col(14)), border-right-color, black) style(box(row(2),col(14)), border-left-color, black) style(box(row(2),col(14)), border-top-color, black)
+    style(box(row(2),col(15)), border-bottom-color, black) style(box(row(2),col(15)), border-left-color, black)
+    style(box(row(2),col(16)),  background-color, blue)
+    style(box(row(2),col(17)), border-top-color, black) style(box(row(2),col(17)), border-bottom-color, black) 
+
+    %%%%%%%%%%%%%%%
+    % row 3 borders
+    %%%%%%%%%%%%%%%
+    style(box(row(3),col(0)), border-top-color, black) style(box(row(3),col(0)), border-bottom-color, black) 
+    style(box(row(3),col(1)),  background-color, blue)
+    style(box(row(3),col(2)), border-top-color, black) style(box(row(3),col(2)), border-bottom-color, black) 
+    style(box(row(3),col(3)),  background-color, blue)
+    style(box(row(3),col(4)),  background-color, blue)
+    style(box(row(3),col(5)), border-top-color, black) style(box(row(3),col(5)), border-bottom-color, black) 
+    style(box(row(3),col(6)),  background-color, blue)
+    style(box(row(3),col(7)),  background-color, blue)
+    style(box(row(3),col(8)), border-top-color, black) style(box(row(3),col(8)), border-right-color, black) style(box(row(3),col(8)), border-bottom-color, black) 
+    style(box(row(3),col(9)), border-top-color, black) style(box(row(3),col(9)), border-left-color, black)  style(box(row(3),col(9)), border-bottom-color, black) 
+    style(box(row(3),col(10)),  background-color, blue)
+    style(box(row(3),col(11)),  background-color, blue)
+    style(box(row(3),col(12)), border-top-color, black) style(box(row(3),col(12)), border-bottom-color, black) 
+    style(box(row(3),col(13)),  background-color, blue)
+    style(box(row(3),col(14)),  background-color, blue)
+    style(box(row(3),col(15)), border-top-color, black) style(box(row(3),col(15)), border-bottom-color, black) 
+    style(box(row(3),col(16)),  background-color, blue)
+    style(box(row(3),col(17)), border-top-color, black) style(box(row(3),col(17)), border-bottom-color, black) 
+
+    %%%%%%%%%%%%%%%
+    % row 4 borders
+    %%%%%%%%%%%%%%%
+    style(box(row(4),col(0)), border-top-color, black) style(box(row(4),col(0)), border-right-color, black) style(box(row(4),col(0)), border-bottom-color, black) 
+    style(box(row(4),col(1)), border-left-color, black) style(box(row(4),col(1)), border-right-color, black)
+    style(box(row(4),col(2)), border-left-color, black) style(box(row(4),col(2)), border-right-color, black) style(box(row(4),col(2)), border-top-color, black) style(box(row(4),col(2)), border-bottom-color, black)
+    style(box(row(4),col(3)), border-left-color, black) style(box(row(4),col(3)), border-right-color, black)
+    style(box(row(4),col(4)), border-left-color, black) style(box(row(4),col(4)), border-right-color, black)
+    style(box(row(4),col(5)), border-left-color, black) style(box(row(4),col(5)), border-top-color, black) style(box(row(4),col(5)), border-bottom-color, black)
+    style(box(row(4),col(6)),  background-color, blue)
+    style(box(row(4),col(7)), border-right-color, black)
+    style(box(row(4),col(8)), border-left-color, black) style(box(row(4),col(8)), border-top-color, black) style(box(row(4),col(8)), border-right-color, black)
+    style(box(row(4),col(9)), border-left-color, black) style(box(row(4),col(9)), border-top-color, black) style(box(row(4),col(9)), border-right-color, black)
+    style(box(row(4),col(10)), border-left-color, black)
+    style(box(row(4),col(11)),  background-color, blue)
+    style(box(row(4),col(12)), border-bottom-color, black) style(box(row(4),col(12)), border-top-color, black) style(box(row(4),col(12)), border-right-color, black)
+    style(box(row(4),col(13)), border-left-color, black) style(box(row(4),col(13)), border-right-color, black)
+    style(box(row(4),col(14)), border-left-color, black) style(box(row(4),col(14)), border-right-color, black)
+    style(box(row(4),col(15)), border-left-color, black) style(box(row(4),col(15)), border-right-color, black) style(box(row(4),col(15)), border-top-color, black) style(box(row(4),col(15)), border-bottom-color, black)
+    style(box(row(4),col(16)), border-left-color, black) style(box(row(4),col(16)), border-right-color, black)
+    style(box(row(4),col(17)), border-left-color, black) style(box(row(4),col(17)), border-bottom-color, black) style(box(row(4),col(17)), border-top-color, black)
+
+    %%%%%%%%%%%%%%%
+    % row 5 borders
+    %%%%%%%%%%%%%%%
+    style(box(row(5),col(0)), border-top-color, black) style(box(row(5),col(0)), border-bottom-color, black) 
+    style(box(row(5),col(1)),  background-color, blue)
+    style(box(row(5),col(2)), border-top-color, black) style(box(row(5),col(2)), border-bottom-color, black) 
+    style(box(row(5),col(3)),  background-color, blue)
+    style(box(row(5),col(4)),  background-color, blue)
+    style(box(row(5),col(5)), border-top-color, black) style(box(row(5),col(5)), border-bottom-color, black) 
+    style(box(row(5),col(6)),  background-color, blue)
+    style(box(row(5),col(7)),  background-color, blue)
+    style(box(row(5),col(8)),  background-color, blue)
+    style(box(row(5),col(9)),  background-color, blue)
+    style(box(row(5),col(10)),  background-color, blue)
+    style(box(row(5),col(11)),  background-color, blue)
+    style(box(row(5),col(12)), border-top-color, black) style(box(row(5),col(12)), border-bottom-color, black) 
+    style(box(row(5),col(13)),  background-color, blue)
+    style(box(row(5),col(14)),  background-color, blue)
+    style(box(row(5),col(15)), border-top-color, black) style(box(row(5),col(15)), border-bottom-color, black) 
+    style(box(row(5),col(16)),  background-color, blue)
+    style(box(row(5),col(17)), border-top-color, black) style(box(row(5),col(17)), border-bottom-color, black)
+
+    %%%%%%%%%%%%%%%
+    % row 6 borders
+    %%%%%%%%%%%%%%%
+    style(box(row(6),col(0)), border-top-color, black) style(box(row(6),col(0)), border-bottom-color, black) 
+    style(box(row(6),col(1)),  background-color, blue)
+    style(box(row(6),col(2)), border-right-color, black) style(box(row(6),col(2)), border-top-color, black)
+    style(box(row(6),col(3)), border-left-color, black) style(box(row(6),col(3)), border-bottom-color, black) style(box(row(6),col(3)), border-right-color, black)
+    style(box(row(6),col(4)), border-left-color, black) style(box(row(6),col(4)), border-right-color, black)  
+    style(box(row(6),col(5)), border-left-color, black) style(box(row(6),col(5)), border-top-color, black) style(box(row(6),col(5)), border-right-color, black)   style(box(row(6),col(5)), border-bottom-color, black)
+    style(box(row(6),col(6)), border-right-color, black) style(box(row(6),col(6)), border-left-color, black)
+    style(box(row(6),col(7)), border-right-color, black) style(box(row(6),col(7)), border-left-color, black)
+    style(box(row(6),col(8)), border-right-color, black) style(box(row(6),col(8)), border-left-color, black) style(box(row(6),col(8)), border-top-color, black)
+    style(box(row(6),col(9)), border-right-color, black) style(box(row(6),col(9)), border-left-color, black) style(box(row(6),col(9)), border-top-color, black)
+    style(box(row(6),col(10)), border-right-color, black) style(box(row(6),col(10)), border-left-color, black)
+    style(box(row(6),col(11)), border-right-color, black) style(box(row(6),col(11)), border-left-color, black)
+    style(box(row(6),col(12)), border-left-color, black) style(box(row(6),col(12)), border-top-color, black) style(box(row(6),col(12)), border-right-color, black)   style(box(row(6),col(12)), border-bottom-color, black)
+    style(box(row(6),col(13)), border-right-color, black) style(box(row(6),col(13)), border-left-color, black)
+    style(box(row(6),col(14)), border-right-color, black) style(box(row(6),col(14)), border-left-color, black) style(box(row(6),col(14)), border-bottom-color, black)
+    style(box(row(6),col(15)), border-top-color, black) style(box(row(6),col(15)), border-left-color, black)
+    style(box(row(6),col(16)),  background-color, blue)
+    style(box(row(6),col(17)), border-top-color, black) style(box(row(6),col(17)), border-bottom-color, black) 
+
+    %%%%%%%%%%%%%%%
+    % row 7 borders
+    %%%%%%%%%%%%%%%
+    style(box(row(7),col(0)), border-top-color, black) style(box(row(7),col(0)), border-bottom-color, black) 
+    style(box(row(7),col(1)),  background-color, blue)
+    style(box(row(7),col(2)),  background-color, blue)
+    style(box(row(7),col(3)), border-top-color, black) style(box(row(7),col(3)), border-bottom-color, black) 
+    style(box(row(7),col(4)),  background-color, blue)
+    style(box(row(7),col(5)), border-top-color, black) style(box(row(7),col(5)), border-bottom-color, black) style(box(row(1),col(5)), border-right-color, black) 
+    style(box(row(7),col(6)),  background-color, blue)
+    style(box(row(7),col(7)),  background-color, blue)
+    style(box(row(7),col(8)),  background-color, blue)
+    style(box(row(7),col(9)),  background-color, blue)
+    style(box(row(7),col(10)),  background-color, blue)
+    style(box(row(7),col(11)),  background-color, blue)
+    style(box(row(7),col(12)), border-top-color, black) style(box(row(7),col(12)), border-bottom-color, black) 
+    style(box(row(7),col(13)),  background-color, blue)
+    style(box(row(7),col(14)), border-top-color, black) style(box(row(7),col(14)), border-bottom-color, black) 
+    style(box(row(7),col(15)),  background-color, blue)
+    style(box(row(7),col(16)),  background-color, blue)
+    style(box(row(7),col(17)), border-top-color, black) style(box(row(7),col(17)), border-bottom-color, black) 
+
+    %%%%%%%%%%%%%%%
+    % row 8 borders
+    %%%%%%%%%%%%%%% 
+    style(box(row(8),col(0)), border-right-color, black) style(box(row(8),col(0)), border-top-color, black) 
+    style(box(row(8),col(1)), border-left-color, black) style(box(row(8),col(1)), border-right-color, black)
+    style(box(row(8),col(2)), border-left-color, black) style(box(row(8),col(2)), border-right-color, black)
+    style(box(row(8),col(3)), border-left-color, black) style(box(row(8),col(3)), border-top-color, black)
+    style(box(row(8),col(4)),  background-color, blue)
+    style(box(row(8),col(5)), border-right-color, black) style(box(row(8),col(5)), border-top-color, black)
+    style(box(row(8),col(6)), border-left-color, black) style(box(row(8),col(6)), border-right-color, black)
+    style(box(row(8),col(7)), border-left-color, black) style(box(row(8),col(7)), border-right-color, black)
+    style(box(row(8),col(8)), border-left-color, black) style(box(row(8),col(8)), border-right-color, black)
+    style(box(row(8),col(9)), border-left-color, black) style(box(row(8),col(9)), border-right-color, black)
+    style(box(row(8),col(10)), border-left-color, black) style(box(row(8),col(10)), border-right-color, black)
+    style(box(row(8),col(11)), border-left-color, black) style(box(row(8),col(11)), border-right-color, black)
+    style(box(row(8),col(12)), border-left-color, black) style(box(row(8),col(12)), border-top-color, black)
+    style(box(row(8),col(13)),  background-color, blue)
+    style(box(row(8),col(14)), border-right-color, black) style(box(row(8),col(14)), border-top-color, black)
+    style(box(row(8),col(15)), border-left-color, black) style(box(row(8),col(15)), border-right-color, black)
+    style(box(row(8),col(16)), border-left-color, black) style(box(row(8),col(16)), border-right-color, black)
+    style(box(row(8),col(17)), border-left-color, black) style(box(row(8),col(17)), border-top-color, black)
+
+    %%% The display menu is not displayed at the start
+    style(help, display, none)
+
+    %%% The images are all declared so that img(X) can be used to remove
+    %%% some subset of images from a block
+    img(images/pacman.png)
+    img(images/pacman_down.png)
+    img(images/pacman_up.png)
+    img(images/pacman_left.png)
+    img(images/dot.png)
+    img(images/empty.png)
+    img(images/michael.jpeg)
+    img(images/tree.png)
+    img(images/shiba.png)
+    img(images/bear.png)
+
+    %%% Note: img tags with no src attribute will still display the last src attribute they had 
+    %%% so in the lambda and ruleset the empty.png is preloaded so that the concept of nothing
+    %%% is displayed.
+
+    %%% Preloads empty.png in the ghost area
+    attribute(boxImg(row(4), col(7)), src, images/empty.png)
+    attribute(boxImg(row(4), col(8)), src, images/empty.png)
+    attribute(boxImg(row(4), col(9)), src, images/empty.png)
+    attribute(boxImg(row(4), col(10)), src, images/empty.png)
+
+    %%% Defines the starting position for all entities
+    
+    %%% Pacman
+    pacRow(0)
+    pacCol(0)
+
+    %%% Professor
+    mRow(4)
+    mCol(7)
+
+    %%% Bear
+    bRow(4)
+    bCol(8)
+
+    %%% Tree
+    tRow(4)
+    tCol(10)
+
+    %% Shiba Inu
+    sRow(4)
+    sCol(9)
+
+    %%% Previous location of Shiba
+    prevSR(-1)
+    prevSC(-1)
+
+    %%% Previous location of Bear
+    prevBR(-1)
+    prevBC(-1)
+
+    %%% Previous location of Professor
+    prevMR(-1)
+    prevMC(-1)
+
+    %%% Counter for bonus points that are aquired by collecting trees
+    bonusPoints(0)
+
+    %%% gameState(1) means game is runnning gameState(0) means it is not
+    gameState(1)
+
+    %%% These are the unique game over messages that are displayed
+    %%% They are here so a subset can be removed with msg(X).
+    msg("The Professor has failed you for using chatGPT!")
+    msg("The Cal Bear has eaten you! UWU")
+    msg("Woof! The bestest boy found you!")
+  </dataset>
+  <ruleset id="library" style="display: none">
+    %%%%%%%%%%%%%%%%%%%%%%
+    %%% Pacman Logic
+    %%%%%%%%%%%%%%%%%%%%%%%
+
+    %%% Moves pacman right
+    %%% Same logic applies for left, up, and down
+    tick :: 
+      %%% checks if game is running
+      gameState(State) & evaluate(1,State) &
+      %%% checks if pacman is going to hit wall
+      pacRow(R) & pacCol(C) & evaluate(plus(1,C), C1) & notOnBorder(R,C1) & ~style(box(row(R),col(C1)),background-color, blue) & 
+      attribute(boxImg(row(R), col(C)), src, images/pacman.png) & img(X) & distinct(images/pacman.png, X) 
+      ==>
+      %%% Updates pacRow() and pacCol and images
+      ~pacCol(C) & pacCol(C1) & attribute(boxImg(row(R), col(C1)), src, images/pacman.png) & ~attribute(boxImg(row(R), col(C1)), src, X) &  
+      ~attribute(boxImg(row(R), col(C)), src, images/pacman.png) &  attribute(boxImg(row(R), col(C)), src, images/empty.png)
+
+    %%% Moves pacman left
+    tick :: gameState(State) & evaluate(1,State) &
+      pacRow(R) & pacCol(C) & evaluate(minus(C,1), C1) & notOnBorder(R,C1) & ~style(box(row(R),col(C1)),  background-color, blue) &
+      attribute(boxImg(row(R), col(C)), src, images/pacman_left.png) & img(X) & distinct(images/pacman_left.png, X) 
+      ==>
+      ~pacCol(C) & pacCol(C1) & attribute(boxImg(row(R), col(C1)), src, images/pacman_left.png) & ~attribute(boxImg(row(R), col(C1)), src, X) &  
+      ~attribute(boxImg(row(R), col(C)), src, images/pacman_left.png) &  attribute(boxImg(row(R), col(C)), src, images/empty.png)
+
+    %%% Moves pacman up
+    tick :: gameState(State) & evaluate(1,State) &
+      pacRow(R) & pacCol(C) & evaluate(minus(R,1), R1) & notOnBorder(R1,C) & ~style(box(row(R1),col(C)),  background-color, blue) &
+      attribute(boxImg(row(R), col(C)), src, images/pacman_up.png) & img(X) & distinct(images/pacman_up.png, X) 
+      ==>
+      ~pacRow(R) & pacRow(R1) & attribute(boxImg(row(R1), col(C)), src, images/pacman_up.png) & ~attribute(boxImg(row(R1), col(C)), src, X) &  
+      ~attribute(boxImg(row(R), col(C)), src, images/pacman_up.png) &  attribute(boxImg(row(R), col(C)), src, images/empty.png)
+
+    %%% Moves pacman down
+    tick :: gameState(State) & evaluate(1,State) &
+      pacRow(R) & pacCol(C) & evaluate(plus(R,1), R1) & notOnBorder(R1,C) & ~style(box(row(R1),col(C)),  background-color, blue) &
+      attribute(boxImg(row(R), col(C)), src, images/pacman_down.png) & img(X) & distinct(images/pacman_down.png, X) 
+      ==>
+      ~pacRow(R) & pacRow(R1) & attribute(boxImg(row(R1), col(C)), src, images/pacman_down.png) & ~attribute(boxImg(row(R1), col(C)), src, X) &  
+      ~attribute(boxImg(row(R), col(C)), src, images/pacman_down.png) &  attribute(boxImg(row(R), col(C)), src, images/empty.png)
+
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%% Note: For all enemy entities they move based on logic defined later. Unlike
+    %%% Pacman they move using either heurstics, predetermined paths, or based on 
+    %%% the position of other entities. 
+    %%% The michaelJump(R,C), treeMove(R,C), bearMove(R,C), and shibaMove(R,C)
+    %%% query a unique location for their respective entity to move. 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    %%%%%%%%%%%%%%%%%%%%%%
+    %%% Professor Logic
+    %%%%%%%%%%%%%%%%%%%%%%
+
+    %%% Moves the Professor
+    tick :: 
+      %%% Checks that game is running
+      gameState(State) & evaluate(1,State) & 
+      %%% This query gets all images that aren't the entity or the pacdot to 
+      %%% prevent pacdot removal
+      img(X) & distinct(images/michael.jpeg, X) & distinct(images/dot.png, X) & 
+      mRow(R) & mCol(C) & 
+      %%% Moves only if score >= 75
+      getScore(Score) & leq(75, Score) &
+      %%% michaelJump determines where he moves
+      michaelJump(R1, C1) &
+      %%% makes it so the Professor only moves about 30% of the time
+      evaluate(random(), RAND) & leq(RAND, 0.1) & 
+      %%% Logic that ensures the professor does not remove pacdots
+      (
+        (~attribute(boxImg(row(R), col(C)), src, images/dot.png) & evaluate(images/empty.png, ADDIMG)) |
+        (attribute(boxImg(row(R), col(C)), src, images/dot.png) & evaluate(images/dot.png, ADDIMG))
+      ) & prevMR(PR) & prevMC(PC)
+      ==>
+      %%% Updates mRow(), mCol(), prevMR(), and prevMC(), and img src's 
+      ~mRow(R) & mRow(R1) & ~mCol(C) & mCol(C1) & prevMR(R) & prevMC(C) & ~prevMR(PR) & ~prevMC(PC) &
+      attribute(boxImg(row(R1), col(C1)), src, images/michael.jpeg) & ~attribute(boxImg(row(R1), col(C1)), src, X) & 
+      ~attribute(boxImg(row(R), col(C)), src, images/michael.jpeg) & attribute(boxImg(row(R), col(C)), src, ADDIMG)
+
+    %%% Removes starting images
+
+    tick :: gameState(State) & evaluate(1,State) & getScore(Score) & leq(75, Score) ==>
+    ~attribute(boxImg(row(4), col(7)), src, images/michael.jpeg) & attribute(boxImg(row(4), col(7)), src, images/empty.png) 
+
+    %%%%%%%%%%%%%%%%%%%%%%
+    %%% Cal Bear Logic
+    %%%%%%%%%%%%%%%%%%%%%%
+
+    %%% Much of the same logic applies here
+
+    %%% Moves bear if score >= 45 bearMove(R,C) gets the next locations
+    tick :: gameState(State) & evaluate(1,State) & img(X) & distinct(images/bear.png, X) & distinct(images/dot.png, X)  &
+    getScore(Score) & leq(45, Score) & 
+    bRow(R) & bCol(C) & evaluate(bearMove(R,C), [R1,C1]) & 
+    (
+      (~attribute(boxImg(row(R), col(C)), src, images/dot.png) & evaluate(images/empty.png, ADDIMG)) |  
+      (attribute(boxImg(row(R), col(C)), src, images/dot.png) & evaluate(images/dot.png, ADDIMG))
+    ) & prevBR(PR) & prevBC(PC)
+    ==> 
+    bRow(R1) & bCol(C1) & ~bRow(R) & ~bCol(C) & prevBR(R) & prevBC(C) & ~prevBR(PR) & ~prevBC(PC) &
+    attribute(boxImg(row(R1), col(C1)), src, images/bear.png) & ~attribute(boxImg(row(R1), col(C1)), src, X) & 
+    ~attribute(boxImg(row(R), col(C)), src, images/bear.png) & attribute(boxImg(row(R), col(C)), src, ADDIMG)
+
+    %%% Removes starting images
+
+    tick :: gameState(State) & evaluate(1,State) & getScore(Score) & leq(45, Score) ==>
+    ~attribute(boxImg(row(3), col(8)), src, images/bear.png) & attribute(boxImg(row(3), col(8)), src, images/empty.png) &
+    ~attribute(boxImg(row(4), col(8)), src, images/bear.png) & attribute(boxImg(row(4), col(8)), src, images/empty.png) 
+    
+    %%%%%%%%%%%%%%%
+    % Shiba Logic
+    %%%%%%%%%%%%%%%
+
+    %%% Much of the same logic applies here
+
+    tick :: gameState(State) & evaluate(1, State) & img(X) & distinct(images/shiba.png, X) & distinct(images/dot.png, X)  &
+    getScore(Score) & leq(10, Score) &
+    sRow(R) & sCol(C) & evaluate(shibaMove(R, C), [R1,C1]) & 
+    (
+      (~attribute(boxImg(row(R), col(C)), src, images/dot.png) & evaluate(images/empty.png, ADDIMG)) |  
+      (attribute(boxImg(row(R), col(C)), src, images/dot.png) & evaluate(images/dot.png, ADDIMG))
+    ) & prevSR(PR) & prevSC(PC)
+    ==> 
+    sRow(R1) & sCol(C1) & ~sRow(R) & ~sCol(C) & prevSR(R) & prevSC(C) & ~prevSR(PR) & ~prevSC(PC) &
+    attribute(boxImg(row(R1), col(C1)), src, images/shiba.png) & ~attribute(boxImg(row(R1), col(C1)), src, X) & 
+    ~attribute(boxImg(row(R), col(C)), src, images/shiba.png) & attribute(boxImg(row(R), col(C)), src, ADDIMG)
+
+    %%% removes starting images
+
+    tick :: gameState(State) & evaluate(1,State) & getScore(Score) & leq(10, Score) ==>
+    ~attribute(boxImg(row(4), col(9)), src, images/shiba.png) & attribute(boxImg(row(4), col(9)), src, images/empty.png) &
+    ~attribute(boxImg(row(3), col(9)), src, images/shiba.png) & attribute(boxImg(row(3), col(9)), src, images/empty.png)
+    %%%%%%%%%%%%%%%
+    % Tree Logic
+    %%%%%%%%%%%%%%%
+
+    %%% Much of the same logic applies here
+
+    tick :: gameState(State) & evaluate(1, State) & img(X) & distinct(images/tree.png, X) & distinct(images/dot.png, X)  &
+    getScore(Score) & leq(15, Score) &
+    tRow(R) & tCol(C) & treeMove(R1, C1) &
+    evaluate(random(), RAND) & leq(RAND, 0.008) & notInGhostBase(R1,C1) &
+    (
+      (~attribute(boxImg(row(R), col(C)), src, images/dot.png) & evaluate(images/empty.png, ADDIMG)) |  
+      (attribute(boxImg(row(R), col(C)), src, images/dot.png) & evaluate(images/dot.png, ADDIMG))
+    )
+    ==>
+    tRow(R1) & tCol(C1) & ~tRow(R) & ~tCol(C) &
+    attribute(boxImg(row(R1), col(C1)), src, images/tree.png) & ~attribute(boxImg(row(R1), col(C1)), src, X) & 
+    ~attribute(boxImg(row(R), col(C)), src, images/tree.png) & attribute(boxImg(row(R), col(C)), src, ADDIMG)
+
+    %%% Removes starter images
+
+    tick :: gameState(State) & evaluate(1,State) & getScore(Score) & leq(15, Score) ==>
+    ~attribute(boxImg(row(4), col(10)), src, images/tree.png) & attribute(boxImg(row(4), col(10)), src, images/empty.png)
+    
+    %%%%%%%%%%%%%%%%%%%%%%
+    %%% Game Logic
+    %%%%%%%%%%%%%%%%%%%%%%
+
+    %%% Displays game over message 
+    tick :: gameState(State) & evaluate(0,State) ==> style(gameover, display, block)
+
+    %%% Loads all images where they need to be. Sets the style for the game over message
+    load :: isrow(R) & iscol(C) & ~(evaluate(0,R) & evaluate(0,C)) & notInGhostBase(R,C) & img(X) & distinct(images/dot.png, X)
+      ==> 
+      attribute(boxImg(row(R), col(C)), src, images/dot.png) & 
+      ~attribute(boxImg(row(R), col(C)), src, X) & 
+      attribute(boxImg(row(0), col(0)), src, images/pacman.png) & 
+      attribute(boxImg(row(4), col(7)), src, images/michael.jpeg) &
+      attribute(boxImg(row(4), col(8)), src, images/bear.png) &
+      attribute(boxImg(row(4), col(9)), src, images/shiba.png) & 
+      attribute(boxImg(row(4), col(10)), src, images/tree.png) & 
+      style(gameover, display, none) & ~style(gameover, display, block) &
+      lossMessage("temp") & msg(M) & ~lossMessage(M)
+    %%% Same logic as above but this triggers when the "Play again" button is pressed
+    click(reset) :: isrow(R) & iscol(C) & notInGhostBase(R,C) & img(X) & distinct(images/dot.png, X)
+      ==> 
+      attribute(boxImg(row(R), col(C)), src, images/dot.png) & 
+      ~attribute(boxImg(row(R), col(C)), src, X) & 
+      attribute(boxImg(row(0), col(0)), src, images/pacman.png) & 
+      attribute(boxImg(row(4), col(7)), src, images/michael.jpeg) &
+      attribute(boxImg(row(4), col(8)), src, images/bear.png) &  
+      attribute(boxImg(row(4), col(9)), src, images/shiba.png) &  
+      attribute(boxImg(row(4), col(10)), src, images/tree.png) &    
+      style(gameover, display, none) & ~style(gameover, display, block) &
+      lossMessage("temp") & msg(M) & ~lossMessage(M)
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%% Every pacman direction is a different image and the following logic changes
+    %%% the image and therefore the direction. Pressing the arrow keys triggers these
+    %%% operations. 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    %%% If the game is running then the direction pacman is facing is updated and img(X)
+    %%% removes the other pacman image
+
+    click(right) :: gameState(State) & evaluate(1, State) & img(X) & distinct(images/pacman.png, X) & pacRow(R) & pacCol(C) ==> 
+      attribute(boxImg(row(R), col(C)), src, images/pacman.png) & ~attribute(boxImg(row(R), col(C)), src, X)
+    click(left) :: gameState(State) & evaluate(1, State) &  img(X) & distinct(images/pacman_left.png, X) & pacRow(R) & pacCol(C) ==> 
+      attribute(boxImg(row(R), col(C)), src, images/pacman_left.png) & ~attribute(boxImg(row(R), col(C)), src, X)  
+    click(up) :: gameState(State) & evaluate(1, State) &  img(X) & distinct(images/pacman_up.png, X) & pacRow(R) & pacCol(C) ==> 
+      attribute(boxImg(row(R), col(C)), src, images/pacman_up.png) & ~attribute(boxImg(row(R), col(C)), src, X)
+    click(down) :: gameState(State) & evaluate(1, State) &  img(X) & distinct(images/pacman_down.png, X) & pacRow(R) & pacCol(C) ==> 
+      attribute(boxImg(row(R), col(C)), src, images/pacman_down.png) & ~attribute(boxImg(row(R), col(C)), src, X)
+    
+    %%% This query gets the score by counting all the pacdots and subtracting the starting total 
+    %%% then the bonus points from collecting are added in.`
+    getScore(X) :- 
+      bonusPoints(Bonus) & 
+      evaluate(minus(155, countofall(boxImg(row(R), col(C)), attribute(boxImg(row(R), col(C)), src, images/dot.png))), Score) &
+      evaluate(plus(Bonus, Score), X)
+    
+    %%% This query makes the string for it to be displayed on the top left
+    innerhtml(score, X) :- 
+      getScore(Score) &
+      evaluate(stringappend("Score: " , Score), X)
+
+    %%% This Query checks that R or C do not exceed the boundries of the valid area.
+    notOnBorder(R,C) :- isrow(R) & iscol(C) & distinct(9, R) & distinct(-1, R) & distinct(-1, C) & distinct(18, C) & notInGhostBase(R,C)
+  
+    %%% This query checks that R and C do not correspond to a location within the ghost base
+    notInGhostBase(R, C) :-  ~(evaluate(4,R) & evaluate(7,C)) & ~(evaluate(4,R) & evaluate(8,C)) &
+    ~(evaluate(4,R) & evaluate(9,C)) & ~(evaluate(4,R) & evaluate(10,C)) & ~(evaluate(3,R) & evaluate(8,C)) & ~(evaluate(3,R) & evaluate(9,C)) 
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%% michaelJump(R1, C1) is the most computationally dense logic in this project.
+    %%% 1. The absolute difference between potential R1 and pacRow is calculated and 
+    %%% the same is done for C1. The possible new positions are 
+    %%% {(MR+1,MC), (MR-1,MC), (MR, MC+1), (MR, MC-1)}. 
+    %%% 2. The heuristic for which action will get the Professor closest to pacman
+    %%% are stored in LEFT,RIGHT,UP, and DOWN. 
+    %%% 3. The min() function finds the smallest one since they correspond with
+    %%% distance. We then see which action is equivalent to the result
+    %%% 4. The query evaluates the minimun and return that one action
+    %%% Note: A small bias is added to the LEFT,UP, and DOWN heuristics as to
+    %%% avoid ties. 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    michaelJump(R1, C1) :- pacRow(PR) & pacCol(PC) & mRow(MR) & mCol(MC) & isrow(R1) & iscol(C1) &
+    evaluate(plus(abs(minus(MR,PR)), abs(minus(PC,plus(MC,1)))), RIGHT) &
+    evaluate(plus(0.1,plus(abs(minus(MR,PR)), abs(minus(PC,minus(MC,1))))), LEFT) &
+    evaluate(plus(0.2,plus(abs(minus(MC,PC)), abs(minus(PR,minus(MR,1))))), UP) &
+    evaluate(plus(0.3,plus(abs(minus(MC,PC)), abs(minus(PR,plus(MR,1))))), DOWN) &
+    evaluate( 
+      min(
+        RIGHT,
+        LEFT,
+        DOWN,
+        UP
+      ),
+      MIN
+    ) &
+    (
+      (
+        evaluate(
+          MIN,
+          RIGHT
+        ) & evaluate(plus(MC,1), C1) & evaluate(MR, R1)
+      ) |
+      (
+        evaluate(
+          MIN,
+          LEFT
+        ) & evaluate(minus(MC,1), C1) & evaluate(MR, R1)
+      ) |
+      (
+        evaluate(
+          MIN,
+          DOWN
+        ) & evaluate(MC, C1) & evaluate(plus(MR,1), R1)
+      ) |
+      (
+        evaluate(
+          MIN,
+          UP
+        ) & evaluate(MC, C1) & evaluate(minus(MR,1), R1)
+      ) 
+    )
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%% bearMove(R, C) is a function that returns a list containing [R1,C1] based on
+    %%% the R and C passed in which are the bear current location. The bear moves 
+    %%% around the center and each line moves onto the next in the following tick.
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    bearMove(R, C) := 
+      if(
+        evaluate(4,R) & evaluate(8,C), [3,8], 
+        evaluate(3,R) & evaluate(8,C), [2,8], 
+        evaluate(2,R) & evaluate(8,C), [2,9], 
+        evaluate(2,R) & evaluate(9,C), [2,10], 
+        evaluate(2,R) & evaluate(10,C), [2,11], 
+        evaluate(2,R) & evaluate(11,C), [2,12], 
+        evaluate(2,R) & evaluate(12,C), [3,12], 
+        evaluate(3,R) & evaluate(12,C), [4,12], 
+        evaluate(4,R) & evaluate(12,C), [5,12], 
+        evaluate(5,R) & evaluate(12,C), [6,12], 
+        evaluate(6,R) & evaluate(12,C), [6,11], 
+        evaluate(6,R) & evaluate(11,C), [6,10], 
+        evaluate(6,R) & evaluate(10,C), [6,9], 
+        evaluate(6,R) & evaluate(9,C), [6,8], 
+        evaluate(6,R) & evaluate(8,C), [6,7], 
+        evaluate(6,R) & evaluate(7,C), [6,6], 
+        evaluate(6,R) & evaluate(6,C), [6,5], 
+        evaluate(6,R) & evaluate(5,C), [5,5], 
+        evaluate(5,R) & evaluate(5,C), [4,5], 
+        evaluate(4,R) & evaluate(5,C), [3,5], 
+        evaluate(3,R) & evaluate(5,C), [2,5], 
+        evaluate(2,R) & evaluate(5,C), [2,6], 
+        evaluate(2,R) & evaluate(6,C), [2,7], 
+        evaluate(2,R) & evaluate(7,C), [2,8]
+      )
+
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%% shibaMove(R, C) operates under the same principle as bearMove(R, C) where it
+    %%% is a function that returns the next step every tick for the Shiba to follow.
+    %%% The shiba first climbs to box(row(0), col(0)) then drops down to the end 
+    %%% of the column then does the same for all columns without blue 
+    %%% blocks (i. e. 5, 12, 17) and loops back to the start after finishing
+    %%% column 17.
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    shibaMove(R, C) := 
+    if(
+      evaluate(4,R) & evaluate(9,C), [3,9], 
+      evaluate(3,R) & evaluate(9,C), [2,9], 
+      evaluate(2,R) & evaluate(9,C), [2,8],
+      evaluate(2,R) & evaluate(8,C), [2,7],
+      evaluate(2,R) & evaluate(7,C), [2,6],
+      evaluate(2,R) & evaluate(6,C), [2,4],
+      evaluate(2,R) & evaluate(4,C), [2,3],
+      evaluate(2,R) & evaluate(3,C), [1,3],
+      evaluate(1,R) & evaluate(3,C), [0,3],
+      evaluate(0,R) & evaluate(3,C), [0,2],
+      evaluate(0,R) & evaluate(2,C), [0,1],
+      evaluate(0,R) & evaluate(1,C), [0,0],
+
+      evaluate(0,R) & evaluate(0,C), [1,0], 
+      evaluate(1,R) & evaluate(0,C), [2,0],
+      evaluate(2,R) & evaluate(0,C), [3,0],
+      evaluate(3,R) & evaluate(0,C), [4,0],
+      evaluate(4,R) & evaluate(0,C), [5,0],
+      evaluate(5,R) & evaluate(0,C), [6,0],
+      evaluate(6,R) & evaluate(0,C), [7,0],
+      evaluate(7,R) & evaluate(0,C), [8,0],
+      evaluate(8,R) & evaluate(0,C), [0,5],
+      
+      evaluate(0,R) & evaluate(5,C), [1,5], 
+      evaluate(1,R) & evaluate(5,C), [2,5],
+      evaluate(2,R) & evaluate(5,C), [3,5],
+      evaluate(3,R) & evaluate(5,C), [4,5],
+      evaluate(4,R) & evaluate(5,C), [5,5],
+      evaluate(5,R) & evaluate(5,C), [6,5],
+      evaluate(6,R) & evaluate(5,C), [7,5],
+      evaluate(7,R) & evaluate(5,C), [8,5],
+      evaluate(8,R) & evaluate(5,C), [0,12],
+
+      evaluate(0,R) & evaluate(12,C), [1,12], 
+      evaluate(1,R) & evaluate(12,C), [2,12],
+      evaluate(2,R) & evaluate(12,C), [3,12],
+      evaluate(3,R) & evaluate(12,C), [4,12],
+      evaluate(4,R) & evaluate(12,C), [5,12],
+      evaluate(5,R) & evaluate(12,C), [6,12],
+      evaluate(6,R) & evaluate(12,C), [7,12],
+      evaluate(7,R) & evaluate(12,C), [8,12],
+      evaluate(8,R) & evaluate(12,C), [0,17],
+
+      evaluate(0,R) & evaluate(17,C), [1,17], 
+      evaluate(1,R) & evaluate(17,C), [2,17],
+      evaluate(2,R) & evaluate(17,C), [3,17],
+      evaluate(3,R) & evaluate(17,C), [4,17],
+      evaluate(4,R) & evaluate(17,C), [5,17],
+      evaluate(5,R) & evaluate(17,C), [6,17],
+      evaluate(6,R) & evaluate(17,C), [7,17],
+      evaluate(7,R) & evaluate(17,C), [8,17],
+      evaluate(8,R) & evaluate(17,C), [0,0]
+    )
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%% treeMove(R1, C1) gives the appearence of being random when it is acutally 
+    %%% very deterministic. It get R1 by getting the absolute value of R - BR and C1
+    %%% by getting the absolute value of C - BC. Since the tree moves very
+    %%% infrequently this method is computationally light and gives random looking 
+    %%% results.
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    treeMove(R1, C1) :- pacCol(C) & pacRow(R) & bRow(BR) & bCol(BC) & 
+    evaluate(abs(minus(R,BR)),R1) & evaluate(abs(minus(C,BC)),C1)
+
+    %%% collision(R,C,R1,C1) is a simple function that checks if [R,C] equals [R1, C1]
+    collision(R,C,R1,C1) := if(evaluate(R,R1) & evaluate(C,C1), 1, true, 0)
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%% The next 6 tick statements detect a collision to end a game. If there is
+    %%% a collision they end the game and update gameState() and the lossMessage().
+    %%% It is only broken down into 6 statements to display a different lossMessage().
+    %%% depending on what collidied into pacman.
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    %%% ends game if the Professor and pacman collide
+    tick :: pacRow(R) & pacCol(C) & 
+    mRow(MR) & mCol(MC) & evaluate(collision(R,C,MR,MC), 1)
+    ==>
+    gameState(0) & ~gameState(1) & 
+    lossMessage("The Professor has failed you for using chatGPT!") & ~lossMessage("temp")
+
+    %%% ends game if the Cal Bear and pacman collide
+    tick :: pacRow(R) & pacCol(C) & 
+    bRow(BR) & bCol(BC) & evaluate(collision(R,C,BR,BC), 1)
+    ==>
+    gameState(0) & ~gameState(1) & 
+    lossMessage("The Cal Bear has eaten you! UWU") & ~lossMessage("temp")
+
+    %%% ends game if Shiba and pacman collide
+    tick :: pacRow(R) & pacCol(C) & 
+    sRow(SR) & sCol(SC) & evaluate(collision(R,C,SR,SC), 1)
+    ==>
+    gameState(0) & ~gameState(1) & 
+    lossMessage("Woof! The bestest boy found you!") & ~lossMessage("temp")
+
+    %%% ends game if pacman would passed where the Professor was in the previous tick
+    tick :: pacRow(R) & pacCol(C) & 
+    prevMR(PMR) & prevMC(PMC) & evaluate(collision(R,C,PMR,PMC), 1) 
+    ==>
+    gameState(0) & ~gameState(1) & 
+    lossMessage("The Professor has failed you for using chatGPT!") & ~lossMessage("temp")
+
+    %%% ends game if pacman would passed where Thee Cal Bear was in the previous tick
+    tick :: pacRow(R) & pacCol(C) & 
+    prevBR(PBR) & prevBC(PBC) & evaluate(collision(R,C,PBR,PBC), 1)
+    ==>
+    gameState(0) & ~gameState(1) & 
+    lossMessage("The Cal Bear has eaten you! UWU") & ~lossMessage("temp")
+
+    %%% ends game if pacman would passed where Shiba was in the previous tick
+    tick :: pacRow(R) & pacCol(C) & 
+    prevSR(PSR) & prevSC(PSC) & evaluate(collision(R,C,PSR,PSC), 1)
+    ==>
+    gameState(0) & ~gameState(1) & 
+    lossMessage("Woof! The bestest boy found you!") & ~lossMessage("temp")
+
+    %%% Calculates the bonus points for collecting trees
+    %%% Adds 10 to bonusPoints() everytime a tree is hit
+    tick ::
+      gameState(State) & evaluate(1, State) &
+      pacRow(R) & pacCol(C) & 
+      tRow(TR) & tCol(TC) & 
+      evaluate(collision(R,C,TR,TC), 1) & bonusPoints(BP) & evaluate(plus(BP,10),NP)
+    ==> ~bonusPoints(BP) & bonusPoints(NP)
+
+    %%% Addes all empty.png to all src to fill empty src tags
+    tick :: gameState(State) & evaluate(0, State) & img(X) & isrow(R) & iscol(C) & distinct(images/empty.png, X) & distinct(images/dot.png, X) ==> 
+    ~attribute(boxImg(row(R),col(C)), src, X) & attribute(boxImg(row(R),col(C)), src, images/empty.png)
+
+    %%% Handles the logic for the helpButton to switch the help div on and off
+    click(helpButton) :: style(help, display, none) ==> ~style(help, display, none) & style(help, display, block)
+    click(helpButton) :: style(help, display, block) ==> style(help, display, none) & ~style(help, display, block)
+ 
+    %%% Sets the lossing message in the html of gameOverMessage
+    innerhtml(gameOverMessage, X) :- lossMessage(M) & evaluate(M, X)
+  </ruleset>
+</html>
